@@ -20,27 +20,63 @@ require("lazy").setup({
 
 		"folke/noice.nvim",
 		event = "VeryLazy",
-		-- opts = {
-		-- 	routes = {
-		-- 		{
-		-- 			filter = {
-		-- 				event = "msg_show",
-		-- 				kind = { "echo", "echomsg" },
-		-- 				find = "written",
-		-- 			},
-		-- 			opts = { skip = true },
-		-- 		},
-		-- 	},
-		-- },
+		config = function()
+			-- https://dev.classmethod.jp/articles/eetann-noice-nvim-beginner/
+			local noice = require("noice")
+
+			local function myMiniView(pattern, kind)
+				kind = kind or ""
+				return {
+					view = "mini",
+					filter = {
+						event = "msg_show",
+						kind = kind,
+						find = pattern,
+					},
+				}
+			end
+
+			require("notify").setup({
+				background_colour = "#000000",
+			})
+
+			noice.setup({
+				messages = {
+					view_search = "mini",
+				},
+				routes = {
+					{
+						view = "notify",
+						filter = { event = "msg_showmode" },
+					},
+					{
+						filter = {
+							event = "notify",
+							warning = true,
+							find = "failed to run generator.*is not executable",
+						},
+						opts = { skip = true },
+					},
+					myMiniView("Already at .* change"),
+					myMiniView("written"),
+					myMiniView("yanked"),
+					myMiniView("more lines?"),
+					myMiniView("fewer lines?"),
+					myMiniView("fewer lines?", "lua_error"),
+					myMiniView("change; before"),
+					myMiniView("change; after"),
+					myMiniView("line less"),
+					myMiniView("lines indented"),
+					myMiniView("No lines in buffer"),
+					myMiniView("search hit .*, continuing at", "wmsg"),
+					myMiniView("E486: Pattern not found", "emsg"),
+				},
+			})
+		end,
 		dependencies = {
 			"MunifTanjim/nui.nvim",
 			"rcarriga/nvim-notify",
 		},
-		-- config = function()
-		-- 	require("notify").setup({
-		-- 		background_colour = "#000000",
-		-- 	})
-		-- end,
 	},
 	{
 		"907th/vim-auto-save",
@@ -73,20 +109,6 @@ require("lazy").setup({
 		},
 	},
 	{
-		"nvim-neo-tree/neo-tree.nvim",
-		branch = "v3.x",
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-			"nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
-			"MunifTanjim/nui.nvim",
-			-- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
-		},
-		config = function()
-			-- Ctrl + b でトグル
-			vim.keymap.set("n", "<leader>b", ":Neotree toggle<CR>", { silent = true })
-		end,
-	},
-	{
 		"nvim-telescope/telescope.nvim",
 		tag = "0.1.5",
 		dependencies = {
@@ -94,7 +116,7 @@ require("lazy").setup({
 			{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
 		},
 		config = function()
-			vim.keymap.set("n", "<leader>p", ":Telescope find_files<CR>", { silent = true })
+			vim.keymap.set("n", "<C-p>", ":Telescope find_files<CR>", { silent = true })
 			vim.keymap.set("n", "<leader>f", ":Telescope live_grep<CR>", { silent = true })
 		end,
 	},
@@ -119,7 +141,7 @@ require("lazy").setup({
 			require("neo-tree").setup({
 				window = {
 					mappings = {
-						["<leader>b"] = function(state)
+						["<C-t>"] = function(state)
 							vim.cmd("Neotree close")
 						end,
 					},
@@ -132,7 +154,7 @@ require("lazy").setup({
 				vim.cmd.wincmd("l")
 			end, 0)
 
-			vim.keymap.set("n", "<leader>b", function()
+			vim.keymap.set("n", "<C-t>", function()
 				vim.cmd("Neotree toggle")
 			end, { silent = true })
 		end,
@@ -159,13 +181,77 @@ require("lazy").setup({
 		"sindrets/diffview.nvim",
 		config = function()
 			require("diffview").setup({
-				keymaps = {
-					file_panel = {
-						["<leader>s"] = '<Cmd>lua require("diffview.actions").toggle_stage_entry()<CR>',
-						["-"] = '<Cmd>lua require("diffview.actions").toggle_stage_entry()<CR>',
-					},
+				git_cmd = { "git", "--no-pager", "-c", "diff.context=999" },
+			})
+		end,
+	},
+	{
+		"ThePrimeagen/harpoon",
+		branch = "harpoon2",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		config = function()
+			local harpoon = require("harpoon")
+
+			-- REQUIRED
+			harpoon:setup({
+				settings = {
+					save_on_toggle = true,
+					sync_on_ui_close = true,
 				},
 			})
+
+			-- basic telescope configuration
+			local conf = require("telescope.config").values
+			local function toggle_telescope(harpoon_files)
+				local file_paths = {}
+				for _, item in ipairs(harpoon_files.items) do
+					table.insert(file_paths, item.value)
+				end
+
+				require("telescope.pickers")
+					.new({}, {
+						prompt_title = "Harpoon",
+						finder = require("telescope.finders").new_table({
+							results = file_paths,
+						}),
+						previewer = conf.file_previewer({}),
+						sorter = conf.generic_sorter({}),
+					})
+					:find()
+			end
+
+			-- キーマッピング
+			vim.keymap.set("n", "<leader>ba", function()
+				harpoon:list():add()
+			end, { silent = false, desc = "Harpoon append" })
+
+			vim.keymap.set("n", "<leader>be", function()
+				toggle_telescope(harpoon:list())
+			end, { silent = false, desc = "Harpoon quick menu" })
+
+			vim.keymap.set("n", "<leader>bs", function()
+				harpoon:list():select(1)
+			end, { silent = false, desc = "Harpoon select 1" })
+
+			vim.keymap.set("n", "<leader>bd", function()
+				harpoon:list():select(2)
+			end, { silent = false, desc = "Harpoon select 2" })
+
+			vim.keymap.set("n", "<leader>bf", function()
+				harpoon:list():select(3)
+			end, { silent = false, desc = "Harpoon select 3" })
+
+			vim.keymap.set("n", "<leader>bg", function()
+				harpoon:list():select(4)
+			end, { silent = false, desc = "Harpoon select 4" })
+
+			vim.keymap.set("n", "<leader>bp", function()
+				harpoon:list():prev()
+			end, { silent = false, desc = "Harpoon prev" })
+
+			vim.keymap.set("n", "<leader>bn", function()
+				harpoon:list():next()
+			end, { silent = false, desc = "Harpoon next" })
 		end,
 	},
 })
@@ -173,10 +259,10 @@ require("lazy").setup({
 -- keybinds
 vim.keymap.set("n", "<D-/>", "<NOP>")
 vim.keymap.set("n", "<D-s>", "<NOP>")
-vim.keymap.set("n", "<leader>h", ":wincmd h<CR>", { silent = true })
-vim.keymap.set("n", "<leader>j", ":wincmd j<CR>", { silent = true })
-vim.keymap.set("n", "<leader>k", ":wincmd k<CR>", { silent = true })
-vim.keymap.set("n", "<leader>l", ":wincmd l<CR>", { silent = true })
+vim.keymap.set("n", "<C-h>", ":wincmd h<CR>", { silent = true })
+vim.keymap.set("n", "<C-j>", ":wincmd j<CR>", { silent = true })
+vim.keymap.set("n", "<C-k>", ":wincmd k<CR>", { silent = true })
+vim.keymap.set("n", "<C-l>", ":wincmd l<CR>", { silent = true })
 -- git
 vim.keymap.set("n", "<leader>g", "<cmd>DiffviewOpen<CR>", silent)
 

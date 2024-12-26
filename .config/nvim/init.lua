@@ -132,9 +132,24 @@ require("lazy").setup({
 			end, { silent = true })
 		end,
 	},
-	{ "akinsho/toggleterm.nvim", config = {
-		open_mapping = "<leader>t",
-	} },
+	{
+		"akinsho/toggleterm.nvim",
+		config = function()
+			require("toggleterm").setup({
+				size = 100,
+				open_mapping = "<leader>t",
+				hide_numbers = true,
+				shade_filetypes = {},
+				shade_terminals = true,
+				shading_factor = 2,
+				start_in_insert = true,
+				insert_mappings = true,
+				persist_size = true,
+				direction = "float",
+				close_on_exit = true,
+			})
+		end,
+	},
 })
 
 -- keybinds
@@ -147,3 +162,11 @@ vim.keymap.set("n", "<leader>l", ":wincmd l<CR>", { silent = true })
 
 -- クリップボードの設定
 vim.opt.clipboard:append("unnamed")
+
+-- 背景を透明に設定
+vim.opt.termguicolors = true
+vim.cmd("highlight Normal guibg=none")
+vim.cmd("highlight NormalNC guibg=none")
+
+-- 端末の設定
+vim.opt.termguicolors = true

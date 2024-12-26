@@ -20,22 +20,27 @@ require("lazy").setup({
 
 		"folke/noice.nvim",
 		event = "VeryLazy",
-		opts = {
-			routes = {
-				{
-					filter = {
-						event = "msg_show",
-						kind = { "echo", "echomsg" },
-						find = "written",
-					},
-					opts = { skip = true },
-				},
-			},
-		},
+		-- opts = {
+		-- 	routes = {
+		-- 		{
+		-- 			filter = {
+		-- 				event = "msg_show",
+		-- 				kind = { "echo", "echomsg" },
+		-- 				find = "written",
+		-- 			},
+		-- 			opts = { skip = true },
+		-- 		},
+		-- 	},
+		-- },
 		dependencies = {
 			"MunifTanjim/nui.nvim",
 			"rcarriga/nvim-notify",
 		},
+		-- config = function()
+		-- 	require("notify").setup({
+		-- 		background_colour = "#000000",
+		-- 	})
+		-- end,
 	},
 	{
 		"907th/vim-auto-save",
@@ -139,7 +144,7 @@ require("lazy").setup({
 				size = 100,
 				open_mapping = "<leader>t",
 				hide_numbers = true,
-				shade_filetypes = {},
+				shade_filezypes = {},
 				shade_terminals = true,
 				shading_factor = 2,
 				start_in_insert = true,
@@ -147,6 +152,19 @@ require("lazy").setup({
 				persist_size = true,
 				direction = "float",
 				close_on_exit = true,
+			})
+		end,
+	},
+	{
+		"sindrets/diffview.nvim",
+		config = function()
+			require("diffview").setup({
+				keymaps = {
+					file_panel = {
+						["<leader>s"] = '<Cmd>lua require("diffview.actions").toggle_stage_entry()<CR>',
+						["-"] = '<Cmd>lua require("diffview.actions").toggle_stage_entry()<CR>',
+					},
+				},
 			})
 		end,
 	},
@@ -159,6 +177,8 @@ vim.keymap.set("n", "<leader>h", ":wincmd h<CR>", { silent = true })
 vim.keymap.set("n", "<leader>j", ":wincmd j<CR>", { silent = true })
 vim.keymap.set("n", "<leader>k", ":wincmd k<CR>", { silent = true })
 vim.keymap.set("n", "<leader>l", ":wincmd l<CR>", { silent = true })
+-- git
+vim.keymap.set("n", "<leader>g", "<cmd>DiffviewOpen<CR>", silent)
 
 -- クリップボードの設定
 vim.opt.clipboard:append("unnamed")
